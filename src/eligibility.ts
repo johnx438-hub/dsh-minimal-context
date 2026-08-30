@@ -19,12 +19,10 @@ export const TOOL_RULES: Record<
   grep: { minChars: 500, alwaysIfLines: 20 },
   web_fetch: { minChars: 800, alwaysIfLines: 40 },
   web_search: { minChars: 600, alwaysIfLines: 25 },
-  // Inline-protected tools: their results must stay in context (passive
-  // permanent context_focus), aligned with minimal's POINTER_RULES ∞ set.
-  write_file: { minChars: Number.POSITIVE_INFINITY },   // confirm writes
-  edit_file: { minChars: Number.POSITIVE_INFINITY },    // confirm edits
-  apply_patch: { minChars: Number.POSITIVE_INFINITY },  // confirm patches
-  skill: { minChars: Number.POSITIVE_INFINITY },        // skill bodies are recipes
+  // NOTE: inline protection (write/edit/skill/recall_query results never
+  // pointerize — passive permanent context_focus) is fully CONFIG-DRIVEN:
+  // see pointerizeNeverTools in types.ts. TOOL_RULES only holds ordinary
+  // char/line thresholds, so users can extend/trim the protection list.
 }
 
 /** Prefixes that must stay inline (errors / short oks). */
@@ -32,6 +30,11 @@ export const NEVER_PREFIXES = ['error:', 'ok: wrote', 'ok: edited'] as const
 
 /**
  * Whether a prior-turn tool result body should become a pointer card.
+ *
+ * Inline protection (passive permanent context_focus): any tool listed in
+ * `config.pointerizeNeverTools` (defaults: write/edit/write_file/edit_file/
+ * apply_patch/skill/recall_query) NEVER pointerizes — results stay in
+ * context. Fully config-driven; extend the list to protect more tools.
  */
 export function shouldPointerize(
   toolName: string,

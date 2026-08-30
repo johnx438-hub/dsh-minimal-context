@@ -20,18 +20,21 @@ describe('funnel eligibility (Phase B)', () => {
     )
   })
 
-  it('inline-protects write/edit/apply_patch/skill (passive permanent context_focus)', () => {
-    for (const tool of ['write_file', 'edit_file', 'apply_patch', 'skill']) {
+  it('inline-protects write/edit/apply_patch/skill/recall (passive permanent context_focus, config-driven)', () => {
+    for (const tool of ['write', 'edit', 'write_file', 'edit_file', 'apply_patch', 'skill', 'recall_query']) {
       assert.equal(
         shouldPointerize(tool, 'Z'.repeat(50_000), cfg),
         false,
-        `${tool} result must stay inline (TOOL_RULES ∞)`,
+        `${tool} result must stay inline (pointerizeNeverTools)`,
       )
     }
-    // config-level default never-tools also carries them (belt and braces)
-    for (const t of ['write_file', 'edit_file', 'apply_patch', 'skill', 'recall_query']) {
+    // defaults carry the protection list
+    for (const t of ['write', 'edit', 'write_file', 'edit_file', 'apply_patch', 'skill', 'recall_query']) {
       assert.ok(cfg.pointerizeNeverTools.includes(t), `default never-tools must include ${t}`)
     }
+    // users can extend the protection list
+    const extended = resolveFunnelConfig({ pointerizeNeverTools: ['my_tool'] })
+    assert.equal(shouldPointerize('my_tool', 'Z'.repeat(10_000), extended), false)
   })
 
   it('pointerizes large bash output', () => {
