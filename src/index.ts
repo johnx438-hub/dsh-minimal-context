@@ -60,9 +60,7 @@ export interface Config extends FunnelConfig {}
 /** Schemastery validation for {@link Config}. */
 export const Config: z<Config> = z.object({
   pointerizeMinChars: z.number().step(1).min(1).default(400),
-  pointerizeNeverTools: z.array(z.string()).default([
-    'recall_query', 'write', 'edit', 'write_file', 'edit_file', 'apply_patch', 'skill',
-  ]),
+  pointerizeNeverTools: z.array(z.string()).default(['skill', 'recall_query']),
   pointerizeNeverPrefixes: z.array(z.string()).default([]),
   pruneThresholdChars: z.number().step(1).min(1),
   pruneHeadChars: z.number().step(1).min(0),

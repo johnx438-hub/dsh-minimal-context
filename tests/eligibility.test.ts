@@ -20,18 +20,18 @@ describe('funnel eligibility (Phase B)', () => {
     )
   })
 
-  it('inline-protects write/edit/apply_patch/skill/recall (passive permanent context_focus, config-driven)', () => {
-    for (const tool of ['write', 'edit', 'write_file', 'edit_file', 'apply_patch', 'skill', 'recall_query']) {
+  it('inline-protects skill + recall_query (recipes & recovery path, config-driven)', () => {
+    for (const tool of ['skill', 'recall_query']) {
       assert.equal(
         shouldPointerize(tool, 'Z'.repeat(50_000), cfg),
         false,
         `${tool} result must stay inline (pointerizeNeverTools)`,
       )
     }
-    // defaults carry the protection list
-    for (const t of ['write', 'edit', 'write_file', 'edit_file', 'apply_patch', 'skill', 'recall_query']) {
-      assert.ok(cfg.pointerizeNeverTools.includes(t), `default never-tools must include ${t}`)
-    }
+    // defaults carry the protection list; write/edit results are empty in
+    // DSH (never trigger pointerize) so they are NOT protected by default
+    assert.deepEqual(cfg.pointerizeNeverTools, ['skill', 'recall_query'])
+    assert.equal(shouldPointerize('write', 'Z'.repeat(50_000), cfg), true)
     // users can extend the protection list
     const extended = resolveFunnelConfig({ pointerizeNeverTools: ['my_tool'] })
     assert.equal(shouldPointerize('my_tool', 'Z'.repeat(10_000), extended), false)
