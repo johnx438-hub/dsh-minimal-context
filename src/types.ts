@@ -150,7 +150,7 @@ export interface ResolvedFunnelConfig {
  */
 export const FUNNEL_DEFAULTS: ResolvedFunnelConfig = {
   pointerizeMinChars: 400,
-  pointerizeNeverTools: ['recall_query'],
+  pointerizeNeverTools: ['recall_query', 'write_file', 'edit_file', 'apply_patch', 'skill'],
   pointerizeNeverPrefixes: [],
   pruneThresholdChars: 8192,
   pruneHeadChars: 4096,

@@ -20,6 +20,20 @@ describe('funnel eligibility (Phase B)', () => {
     )
   })
 
+  it('inline-protects write/edit/apply_patch/skill (passive permanent context_focus)', () => {
+    for (const tool of ['write_file', 'edit_file', 'apply_patch', 'skill']) {
+      assert.equal(
+        shouldPointerize(tool, 'Z'.repeat(50_000), cfg),
+        false,
+        `${tool} result must stay inline (TOOL_RULES ∞)`,
+      )
+    }
+    // config-level default never-tools also carries them (belt and braces)
+    for (const t of ['write_file', 'edit_file', 'apply_patch', 'skill', 'recall_query']) {
+      assert.ok(cfg.pointerizeNeverTools.includes(t), `default never-tools must include ${t}`)
+    }
+  })
+
   it('pointerizes large bash output', () => {
     assert.equal(shouldPointerize('bash', 'Z'.repeat(800), cfg), true)
     assert.equal(shouldPointerize('bash', 'short', cfg), false)

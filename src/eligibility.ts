@@ -19,6 +19,12 @@ export const TOOL_RULES: Record<
   grep: { minChars: 500, alwaysIfLines: 20 },
   web_fetch: { minChars: 800, alwaysIfLines: 40 },
   web_search: { minChars: 600, alwaysIfLines: 25 },
+  // Inline-protected tools: their results must stay in context (passive
+  // permanent context_focus), aligned with minimal's POINTER_RULES ∞ set.
+  write_file: { minChars: Number.POSITIVE_INFINITY },   // confirm writes
+  edit_file: { minChars: Number.POSITIVE_INFINITY },    // confirm edits
+  apply_patch: { minChars: Number.POSITIVE_INFINITY },  // confirm patches
+  skill: { minChars: Number.POSITIVE_INFINITY },        // skill bodies are recipes
 }
 
 /** Prefixes that must stay inline (errors / short oks). */
