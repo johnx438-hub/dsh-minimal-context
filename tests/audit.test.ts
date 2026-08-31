@@ -73,7 +73,7 @@ describe('audit renderDiffAudit', () => {
     })
     const audit = renderDiffAudit(event)
     assert.ok(audit)
-    assert.match(audit!, /^ok: edited \/tmp\/x \(\d+ bytes\) file_hash=[0-9a-f]{12}/)
+    assert.match(audit!, /^ok: edited \/tmp\/x \(\d+ bytes\) result_hash=[0-9a-f]{12}/)
     assert.ok(audit!.includes(EDIT_DISPLAY_START))
     assert.ok(audit!.includes(EDIT_DISPLAY_END))
     assert.ok(audit!.includes('- a'))
@@ -105,7 +105,7 @@ describe('audit renderDiffAudit', () => {
 
 describe('audit splitAuditBlock / hasAuditDisplay', () => {
   it('splits summary from display', () => {
-    const audit = `ok: edited /a (1 bytes) file_hash=abc${EDIT_DISPLAY_START}--- a//a\n+++ b//a\n- x\n+ y${EDIT_DISPLAY_END}`
+    const audit = `ok: edited /a (1 bytes) result_hash=abc${EDIT_DISPLAY_START}--- a//a\n+++ b//a\n- x\n+ y${EDIT_DISPLAY_END}`
     const { summary, display } = splitAuditBlock(audit)
     assert.match(summary, /^ok: edited \/a/)
     assert.ok(display.startsWith(EDIT_DISPLAY_START))
@@ -150,7 +150,7 @@ describe('audit injectAuditBlocks', () => {
     assert.ok(text.startsWith('ok: edited'))
     assert.ok(!text.includes('The file updated successfully.'))
     assert.ok(text.includes(EDIT_DISPLAY_START))
-    assert.ok(text.includes('file_hash='))
+    assert.ok(text.includes('result_hash='))
   })
 
   it('real-harness body still keeps summary inline (NEVER_PREFIXES holds)', async () => {

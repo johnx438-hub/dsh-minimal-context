@@ -8,7 +8,7 @@
  *
  * This module renders that hidden meta into an audit block:
  *
- *   ok: edited /abs/path (284 bytes) file_hash=<sha256>      ← summary (fact)
+ *   ok: edited /abs/path (284 bytes) result_hash=<sha256>      ← summary (fact)
  *   [edit_display]                                           ← display (process)
  *   --- a/abs/path (edit)
  *   +++ b/abs/path (edit)
@@ -83,7 +83,7 @@ function renderHunk(diff: FileDiff): string {
  * Build the audit block for a `tool/result` event, or `null` when there is
  * nothing to audit (no validated meta.diffs).
  *
- * The summary line is "ok: <tool> <path> (<bytes> bytes) file_hash=<hash>" so
+ * The summary line is "ok: <tool> <path> (<bytes> bytes) result_hash=<hash>" so
  * the existing `NEVER_PREFIXES` inline protection keeps it in context. The
  * display region is wrapped in `[edit_display]` markers for L2.
  */
@@ -99,7 +99,7 @@ export function renderDiffAudit(event: SessionEvent<'tool/result'>): string | nu
   const hunks = diffs.map(renderHunk).join('\n')
   const display = `${EDIT_DISPLAY_START}--- a/${path}\n+++ b/${path}\n${hunks}${EDIT_DISPLAY_END}`
 
-  return `ok: edited ${path} (${bytes} bytes) file_hash=${hash}${display}`
+  return `ok: edited ${path} (${bytes} bytes) result_hash=${hash}${display}`
 }
 
 /** Split an audit block into summary (fact) and display (process) parts. */
