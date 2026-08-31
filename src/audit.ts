@@ -8,7 +8,7 @@
  *
  * This module renders that hidden meta into an audit block:
  *
- *   ok: edited /abs/path (284 bytes) result_hash=<sha256>      ← summary (fact)
+ *   ok: edited /abs/path (284 bytes) file_hash=<sha256>      ← summary (fact)
  *   [edit_display]                                           ← display (process)
  *   --- a/abs/path (edit)
  *   +++ b/abs/path (edit)
@@ -93,6 +93,10 @@ export function renderDiffAudit(event: SessionEvent<'tool/result'>): string | nu
 
   const body = toolResultText(event)
   const path = diffs[0]?.path ?? '(unknown)'
+  // result_hash hashes the audit/result body text — an anchor for the tool
+  // RESULT, NOT the file content on disk. For a real content/version anchor
+  // (concurrent-edit detection) a separate content_hash of the after-text is
+  // needed; do not use result_hash as if it were the file's hash.
   const hash = createHash('sha256').update(body).digest('hex').slice(0, 12)
   const bytes = codePointLength(body)
 
@@ -133,14 +137,25 @@ export function injectAuditBlocks(agent: Agent, currentTurn: number): number {
   for (const seq of [...agent.session.surface.nodes]) {
     const event = agent.session.events[seq]
     if (event?.type !== 'tool/result') continue
-    if (event.data.turn >= currentTurn) continue
+    // NOTE: intentionally NOT filtered by turn. DSH long turns (agent drives
+    // many steps autonomously) would otherwise delay audit injection until a
+    // real turn boundary, making the audit block useless mid-workflow. The
+    // idempotency guards (audited/compacted/summary-only) make re-injection
+    // impossible, so injecting current-turn results is safe.
     if (diffsFromMeta(event.data.meta) === undefined) continue
 
     const block = event.data.message.content[0]
     if (block === undefined || block.type !== 'tool-result') continue
     const texts = block.content.filter((c): c is { type: 'text'; text: string } => c.type === 'text')
     const joined = texts.map((c) => c.text).join('')
-    if (joined.includes(EDIT_DISPLAY_START)) continue // already annotated
+    // Idempotent: skip when already audited (full START+END pair) OR already
+    // L2-compacted ([edit_display compacted] — no full pair, but re-injecting
+    // would undo the compaction) OR already a summary-only audit line.
+    if (
+      hasAuditDisplay(joined)
+      || joined.includes('[edit_display compacted')
+      || /^ok: edited /m.test(joined)
+    ) continue
 
     const audit = renderDiffAudit(event)
     if (audit === null) continue

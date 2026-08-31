@@ -171,13 +171,19 @@ describe('audit injectAuditBlocks', () => {
     assert.equal(shouldPointerize('edit', text, resolveFunnelConfig()), false)
   })
 
-  it('skips current-turn results (not yet auditable)', () => {
-    const { event } = makeToolResult({
+  it('injects current-turn results too (DSH long-turn reality)', () => {
+    // Funnel now audits any meta.diffs-bearing tool/result regardless of turn —
+    // DSH long turns (many steps per turn) would otherwise starve injection.
+    const { event, seq } = makeToolResult({
       turn: 7,
       meta: { diffs: [{ path: '/tmp/x', oldText: 'a', newText: 'b' }] },
+      body: 'The file updated successfully.',
     })
     const agent = makeAgent([event])
-    assert.equal(injectAuditBlocks(agent, 7), 0)
+    assert.equal(injectAuditBlocks(agent, 7), 1)
+    const text = agent.session.events[seq].data.message.content[0].content.map((c: any) => c.text).join('')
+    assert.ok(text.includes('ok: edited'))
+    void seq
   })
 
   it('is idempotent (skips already-annotated events)', () => {
@@ -188,6 +194,22 @@ describe('audit injectAuditBlocks', () => {
     })
     const agent = makeAgent([event])
     assert.equal(injectAuditBlocks(agent, 7), 0) // already carries marker
+    void seq
+  })
+
+  it('is idempotent after L2 compaction (does not re-inject full diff)', () => {
+    // Grok review hardstop: after L2 pointerizes the display to
+    // "[edit_display compacted: …]", injectAuditBlocks must NOT re-inject the
+    // full diff (its old check only looked for the full START marker).
+    const { event, seq } = makeToolResult({
+      turn: 5,
+      meta: { diffs: [{ path: '/tmp/x', oldText: 'a', newText: 'b' }] },
+      body: 'ok: edited /tmp/x (5 bytes) result_hash=abc\n[edit_display compacted: 120 chars — recall=recall_query(action_id="call_1")]',
+    })
+    const agent = makeAgent([event])
+    assert.equal(injectAuditBlocks(agent, 7), 0) // compacted → skip
+    const text = agent.session.events[seq].data.message.content[0].content.map((c: any) => c.text).join('')
+    assert.ok(!text.includes('- a')) // no full diff re-injected
     void seq
   })
 

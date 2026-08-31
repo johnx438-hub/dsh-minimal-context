@@ -13,6 +13,7 @@ import type { SessionEvent } from '@deepseek-ai/dsh-session'
 // Type-only: the `compaction/prune` SessionEventMap merge (shadow-price event).
 import type {} from '@deepseek-ai/dsh-compaction'
 import { shouldPointerize } from './eligibility.ts'
+import { hasAuditDisplay, splitAuditBlock } from './audit.ts'
 import { isPointerCardText } from './surface.ts'
 import { buildToolPreview, renderCardWithPreview } from './preview.ts'
 import {
@@ -121,6 +122,36 @@ export function pointerize(
     // Already a card (or compacted card) on the surface — skip.
     if (isPointerCardText(text)) continue
     const tool = toolNames.get(callId) ?? 'unknown'
+    // L2 audit-block compaction: an audit block is inline-protected as a whole
+    // (NEVER_PREFIXES keeps the summary), but its [edit_display] display region
+    // may be pointerized separately when it exceeds displayPointerizeMinChars.
+    // This runs BEFORE shouldPointerize (whole-result protection exists to keep
+    // the summary, not the display). Idempotent via hasAuditDisplay — the
+    // compacted block no longer carries the matching START+END pair.
+    if (hasAuditDisplay(text)) {
+      const { summary, display } = splitAuditBlock(text)
+      if (display.length > resolved.displayPointerizeMinChars) {
+        const cardLine = `[edit_display compacted: ${display.length} chars — recall=recall_query(action_id="${actionId}")]`
+        const newText = `${summary}\n${cardLine}`
+        const result = event.data.message.content[0]
+        const message = freezeMessage<ToolResultMessage>({
+          ...event.data.message,
+          content: [{
+            ...result,
+            content: [{ type: 'text', text: newText }],
+          }] as [typeof result],
+        })
+        agent.session.append('tool/result', {
+          ...event.data,
+          message,
+        }, {
+          surfaceOp: { op: 'replace', start: seq, end: seq },
+          sourceEventSeqs: [seq],
+        })
+        count += 1
+      }
+      continue // audit blocks never take the whole-result card path
+    }
     if (!shouldPointerize(tool, text, resolved)) continue
     // context_focus keep-boost: skip pointerization while a matching focus is
     // active — unless the surface is over budget (high pressure always wins).

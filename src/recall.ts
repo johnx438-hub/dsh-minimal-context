@@ -9,6 +9,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { isReplacementSurfaceEvent } from '@deepseek-ai/dsh-session'
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import { renderDiffAudit } from './audit.ts'
 import { toolResultText } from './surface.ts'
 
 /** Harness tool name. Matches the pointer-card line `recall=recall_query(...)`. */
@@ -46,7 +47,15 @@ export function recallOriginalText(agent: Agent, actionId: string): string | und
     if (String(event.data.message.source.callId) !== wanted) continue
     if (isReplacementSurfaceEvent(event)) continue
     const text = toolResultText(event)
-    if (text.length > 0) return text
+    if (text.length > 0) {
+      // L2 recall: if the event still carries meta.diffs (L1 audit source) but
+      // the surface body was display-compacted, re-render the full audit block
+      // so recall returns the complete diff, not the [edit_display compacted]
+      // stand-in or the harness's short "updated successfully" line.
+      const audit = renderDiffAudit(event)
+      if (audit !== null) return audit
+      return text
+    }
   }
   return undefined
 }

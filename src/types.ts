@@ -61,6 +61,8 @@ export interface FunnelConfig {
   pointerizeNeverTools?: string[]
   /** Extra never-pointerize body prefixes (case-insensitive). */
   pointerizeNeverPrefixes?: string[]
+  /** L2: audit-block display region pointerized above this many chars (default 600). */
+  displayPointerizeMinChars?: number
   /** Prune only when a prior-turn surface tool/result exceeds this many chars. */
   pruneThresholdChars?: number
   /** Head chars kept when head/tail-pruning a still-full body. */
@@ -118,6 +120,8 @@ export interface ResolvedFunnelConfig {
   pointerizeMinChars: number
   pointerizeNeverTools: string[]
   pointerizeNeverPrefixes: string[]
+  /** L2: audit-block [edit_display] display region pointerized above this many chars. */
+  displayPointerizeMinChars: number
   pruneThresholdChars: number
   pruneHeadChars: number
   pruneTailChars: number
@@ -152,6 +156,7 @@ export const FUNNEL_DEFAULTS: ResolvedFunnelConfig = {
   pointerizeMinChars: 400,
   pointerizeNeverTools: ['skill', 'recall_query'],
   pointerizeNeverPrefixes: [],
+  displayPointerizeMinChars: 600,
   pruneThresholdChars: 8192,
   pruneHeadChars: 4096,
   pruneTailChars: 1024,
@@ -185,6 +190,8 @@ export function resolveFunnelConfig(config: FunnelConfig = {}): ResolvedFunnelCo
       config.pointerizeNeverPrefixes ?? [
         ...FUNNEL_DEFAULTS.pointerizeNeverPrefixes,
       ],
+    displayPointerizeMinChars:
+      config.displayPointerizeMinChars ?? FUNNEL_DEFAULTS.displayPointerizeMinChars,
     pruneThresholdChars: config.pruneThresholdChars ?? FUNNEL_DEFAULTS.pruneThresholdChars,
     pruneHeadChars: config.pruneHeadChars ?? FUNNEL_DEFAULTS.pruneHeadChars,
     pruneTailChars: config.pruneTailChars ?? FUNNEL_DEFAULTS.pruneTailChars,
