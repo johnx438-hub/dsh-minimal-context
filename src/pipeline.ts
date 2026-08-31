@@ -6,6 +6,7 @@
 
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { isSurfaceOverBudget, withBudgetPressure } from './budget.ts'
+import { injectAuditBlocks } from './audit.ts'
 import { compact } from './compact.ts'
 import { withModelDerivedBudget } from './model-context.ts'
 import { pointerize } from './pointerize.ts'
@@ -51,6 +52,11 @@ export function runFunnel(agent: Agent, turn: number, options: FunnelRunOptions 
   const base = options.resolved ?? resolveFunnelConfig(options.config)
   const derived = withModelDerivedBudget(base, agent.options?.model)
   const resolved = derived.config
+
+  // L1 audit: render DSH's hidden meta.diffs into model-visible audit blocks
+  // before pointerize, so the summary stays inline (ok: edited prefix hits
+  // NEVER_PREFIXES) and the [edit_display] region is available for L2.
+  injectAuditBlocks(agent, turn)
 
   const pointerized = pointerize(agent, turn, resolved)
 
