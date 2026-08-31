@@ -118,10 +118,13 @@ export function hasAuditDisplay(audit: string): boolean {
 
 /**
  * Inject audit blocks into prior-turn `tool/result` events that carry
- * `meta.diffs`. Runs before pointerize: the injected summary keeps the
- * `ok: edited` prefix (inline-protected by NEVER_PREFIXES), and the display
- * region is wrapped for L2. Idempotent — an event already carrying an
- * `[edit_display]` block is skipped.
+ * `meta.diffs`. Runs before pointerize.
+ *
+ * The injected block **replaces** the model-facing body (the harness render is
+ * only "Updated file" / "Edited …" — no audit value), so the new body starts
+ * with `ok: edited` and hits `NEVER_PREFIXES`, keeping summary + display
+ * inline (L1) and giving L2 a stable `[edit_display]` region to pointerize.
+ * Idempotent — an event already carrying an `[edit_display]` block is skipped.
  *
  * @returns number of events annotated.
  */
@@ -142,11 +145,14 @@ export function injectAuditBlocks(agent: Agent, currentTurn: number): number {
     const audit = renderDiffAudit(event)
     if (audit === null) continue
 
+    // Replace the whole body with the audit block (starts with `ok: edited`),
+    // so NEVER_PREFIXES inline protection holds even on real harness renders
+    // like "The file updated successfully.".
     const message = freezeMessage<ToolResultMessage>({
       ...event.data.message,
       content: [{
         ...block,
-        content: [...texts, { type: 'text', text: `\n${audit}` }],
+        content: [{ type: 'text', text: audit }],
       }] as [typeof block],
     })
     agent.session.append('tool/result', {

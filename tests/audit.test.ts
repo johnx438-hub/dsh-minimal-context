@@ -140,14 +140,35 @@ describe('audit injectAuditBlocks', () => {
     const { event, seq } = makeToolResult({
       turn: 5,
       meta: { diffs: [{ path: '/tmp/x', oldText: 'a', newText: 'b' }] },
-      body: 'ok: edited /tmp/x (5 bytes)',
+      body: 'The file updated successfully.',
     })
     const agent = makeAgent([event])
     const n = injectAuditBlocks(agent, 7)
     assert.equal(n, 1)
     const text = agent.session.events[seq].data.message.content[0].content.map((c: any) => c.text).join('')
+    // Body is REPLACED, not appended: starts with ok: edited, no leftover original.
+    assert.ok(text.startsWith('ok: edited'))
+    assert.ok(!text.includes('The file updated successfully.'))
     assert.ok(text.includes(EDIT_DISPLAY_START))
     assert.ok(text.includes('file_hash='))
+  })
+
+  it('real-harness body still keeps summary inline (NEVER_PREFIXES holds)', async () => {
+    // Grok review: with DSH's real render ("The file updated successfully."),
+    // after injection the body must start with `ok: edited` so shouldPointerize
+    // returns false — summary stays in context, not folded into a card.
+    const { event, seq } = makeToolResult({
+      turn: 5,
+      meta: { diffs: [{ path: '/tmp/x', oldText: 'a', newText: 'b' }] },
+      body: 'The file updated successfully.',
+    })
+    const agent = makeAgent([event])
+    injectAuditBlocks(agent, 7)
+    const text = agent.session.events[seq].data.message.content[0].content.map((c: any) => c.text).join('')
+    assert.ok(text.startsWith('ok: edited'))
+    const { shouldPointerize } = await import('../src/eligibility.ts')
+    const { resolveFunnelConfig } = await import('../src/types.ts')
+    assert.equal(shouldPointerize('edit', text, resolveFunnelConfig()), false)
   })
 
   it('skips current-turn results (not yet auditable)', () => {
