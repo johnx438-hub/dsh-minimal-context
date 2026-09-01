@@ -37,6 +37,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import { freezeMessage } from '@deepseek-ai/dsh-llm'
 import type { ToolResultMessage } from '@deepseek-ai/dsh-llm'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import { eventAt, allEvents } from './session-events.ts'
 import { codePointLength, toolResultText } from './surface.ts'
 
 /** Marker wrapping the diff display region (L2 pointerize target). */
@@ -135,7 +136,7 @@ export function hasAuditDisplay(audit: string): boolean {
 export function injectAuditBlocks(agent: Agent, currentTurn: number): number {
   let count = 0
   for (const seq of [...agent.session.surface.nodes]) {
-    const event = agent.session.events[seq]
+    const event = eventAt(agent, seq)
     if (event?.type !== 'tool/result') continue
     // NOTE: intentionally NOT filtered by turn. DSH long turns (agent drives
     // many steps autonomously) would otherwise delay audit injection until a

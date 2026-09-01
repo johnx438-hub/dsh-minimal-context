@@ -9,6 +9,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { isReplacementSurfaceEvent } from '@deepseek-ai/dsh-session'
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import { eventAt, allEvents } from './session-events.ts'
 import { renderDiffAudit } from './audit.ts'
 import { toolResultText } from './surface.ts'
 
@@ -25,7 +26,7 @@ export const RECALL_QUERY_NAME = 'recall_query'
  */
 export function recallOriginalText(agent: Agent, actionId: string): string | undefined {
   const wanted = String(actionId)
-  for (const event of agent.session.events) {
+  for (const event of allEvents(agent)) {
     if (event.type !== 'funnel/pointer-card') continue
     const data = event.data as {
       action_id?: string
@@ -34,7 +35,7 @@ export function recallOriginalText(agent: Agent, actionId: string): string | und
     }
     if (data.action_id !== wanted && data.callId !== wanted) continue
     if (typeof data.sourceSeq === 'number') {
-      const at = agent.session.events[data.sourceSeq]
+      const at = eventAt(agent, data.sourceSeq)
       if (at?.type === 'tool/result' && !isReplacementSurfaceEvent(at)) {
         const text = toolResultText(at)
         if (text.length > 0) return text
@@ -42,7 +43,7 @@ export function recallOriginalText(agent: Agent, actionId: string): string | und
     }
     break
   }
-  for (const event of agent.session.events) {
+  for (const event of allEvents(agent)) {
     if (event.type !== 'tool/result') continue
     if (String(event.data.message.source.callId) !== wanted) continue
     if (isReplacementSurfaceEvent(event)) continue

@@ -12,6 +12,7 @@ import type { ToolResultMessage } from '@deepseek-ai/dsh-llm'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 // Type-only: the `compaction/prune` SessionEventMap merge (shadow-price event).
 import type {} from '@deepseek-ai/dsh-compaction'
+import { eventAt, allEvents } from './session-events.ts'
 import { shouldPointerize } from './eligibility.ts'
 import { hasAuditDisplay, splitAuditBlock } from './audit.ts'
 import { isPointerCardText } from './surface.ts'
@@ -79,7 +80,7 @@ export function pointerize(
 
   const toolNames = new Map<string, string>()
   const toolArgs = new Map<string, Record<string, unknown>>()
-  for (const event of agent.session.events) {
+  for (const event of allEvents(agent)) {
     if (event.type === 'tool/call') {
       toolNames.set(event.data.callId, event.data.name)
       const args = event.data.arguments
@@ -91,7 +92,7 @@ export function pointerize(
 
   const candidates: { seq: number; event: SessionEvent<'tool/result'> }[] = []
   for (const seq of [...agent.session.surface.nodes]) {
-    const event = agent.session.events[seq]
+    const event = eventAt(agent, seq)
     if (event?.type !== 'tool/result') continue
     if (event.data.turn >= currentTurn) continue
     candidates.push({ seq, event })
