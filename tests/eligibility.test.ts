@@ -4,6 +4,7 @@ import { describe, it } from 'node:test'
 import { shouldPointerize } from '../src/eligibility.ts'
 import { headTailPrune, isPointerCardText } from '../src/surface.ts'
 import { resolveFunnelConfig } from '../src/types.ts'
+import { Config } from '../src/index.ts'
 
 describe('funnel eligibility (Phase B)', () => {
   const cfg = resolveFunnelConfig()
@@ -16,6 +17,24 @@ describe('funnel eligibility (Phase B)', () => {
   it('never pointerizes recall_query', () => {
     assert.equal(
       shouldPointerize('recall_query', 'Z'.repeat(50_000), cfg),
+      false,
+    )
+  })
+
+  it('schema default matches FUNNEL_DEFAULTS (skill + recall_query)', () => {
+    // Regression: cordis loads plugins via the schema default (src/index.ts
+    // Config), NOT resolveFunnelConfig — a drift here silently dropped `skill`
+    // from runtime inline protection while unit tests stayed green.
+    const schemaDefault = Config.dict.pointerizeNeverTools.meta?.default
+    assert.deepEqual(
+      schemaDefault,
+      ['skill', 'recall_query'],
+      'schema default must carry skill + recall_query (author inline design)',
+    )
+    // schema-parsed config must actually protect skill at runtime
+    const parsed = schemaDefault ? { pointerizeNeverTools: schemaDefault } : {}
+    assert.equal(
+      shouldPointerize('skill', 'Z'.repeat(50_000), resolveFunnelConfig(parsed)),
       false,
     )
   })
