@@ -17,6 +17,7 @@
 
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import { allEvents } from './session-events.ts'
 
 export interface TaskSummaryDoc {
   task_id: string
@@ -105,7 +106,7 @@ export function extractTaskSummaries(agent: Agent): TaskSummaryDoc[] {
   // user/message events carry no turn — track the most recent user text as a
   // cursor in seq order and attach it to tool calls that follow it.
   let lastUserIntent: string | undefined
-  for (const event of agent.session.events as SessionEvent[]) {
+  for (const event of allEvents(agent) as SessionEvent[]) {
     if (event.type === 'user/message') {
       // Injected TaskSummary notices are self-labeled background context, not
       // user intents — skip them so the previous summary's boilerplate never

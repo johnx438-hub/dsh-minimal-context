@@ -16,6 +16,7 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ResolvedFunnelConfig } from './types.ts'
 import { toolResultText } from './surface.ts'
+import { eventAt, allEvents } from './session-events.ts'
 
 export interface SummarizeOptions {
   /** True when `ctx.get('compaction')` resolved (seam present, not invoked). */
@@ -27,7 +28,7 @@ export function surfaceTextChars(agent: Agent): { nodes: number; chars: number }
   const nodes = [...agent.session.surface.nodes]
   let chars = 0
   for (const seq of nodes) {
-    const event = agent.session.events[seq]
+    const event = eventAt(agent, seq)
     if (event === undefined) continue
     if (event.type === 'tool/result') {
       chars += toolResultText(event).length

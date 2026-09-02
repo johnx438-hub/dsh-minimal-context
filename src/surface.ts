@@ -10,6 +10,7 @@ import type { ToolResultMessage } from '@deepseek-ai/dsh-llm'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import type {} from '@deepseek-ai/dsh-compaction'
 import { estimateMessage } from './vendor/estimate.js'
+import { eventAt } from './session-events.ts'
 import { calibratedEstimate } from './token-calibrator.ts'
 
 /** Same middle marker as `dsh-compaction-tool-result-pruner`. */
@@ -117,7 +118,7 @@ export function surfaceToolResults(
 ): { seq: number; event: SessionEvent<'tool/result'> }[] {
   const out: { seq: number; event: SessionEvent<'tool/result'> }[] = []
   for (const seq of [...agent.session.surface.nodes]) {
-    const event = agent.session.events[seq]
+    const event = eventAt(agent, seq)
     if (event?.type === 'tool/result') out.push({ seq, event })
   }
   return out

@@ -22,6 +22,7 @@ import type { PreStepDecision } from '@deepseek-ai/dsh-agent'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { randomUUID } from 'node:crypto'
 import { runFunnel } from './pipeline.ts'
+import { injectDateAnchor } from './date-anchor.ts'
 import { surfaceTextChars } from './summarize.ts'
 import { registerRecallQuery } from './recall.ts'
 import { registerContextFocus } from './context-focus.ts'
@@ -186,6 +187,9 @@ export function apply(ctx: Context, config: Config): void {
     const decision = await next()
     if (decision.kind === 'reject' || signal.aborted) return decision
     observeUsage(agent)
+    // Low-frequency date anchor: inject [@MM-DD HH:MM] when the calendar day
+    // changed since last injection (projection-layer day-change detector).
+    injectDateAnchor(agent)
     const result = runFunnel(agent, turn, {
       config,
       compactionAvailable: compactionAvailable(ctx),
